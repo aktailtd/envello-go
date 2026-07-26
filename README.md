@@ -6,7 +6,7 @@ email API.
 ## Install
 
 ```bash
-go get github.com/Aktai-ltd/envello-go
+go get github.com/Bergblumestudio/envello-go
 ```
 
 ## Usage
@@ -18,7 +18,7 @@ import (
 	"context"
 	"log"
 
-	envello "github.com/Aktai-ltd/envello-go"
+	envello "github.com/Bergblumestudio/envello-go"
 )
 
 func main() {
