@@ -1,3 +1,3 @@
-module github.com/Bergblumestudio/envello-go
+module github.com/aktailtd/envello-go
 
 go 1.21
