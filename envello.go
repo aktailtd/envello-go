@@ -8,14 +8,22 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 )
 
 // DefaultBaseURL is used when no WithBaseURL option is given.
 const DefaultBaseURL = "https://api.envello.dev"
+
+// ErrInsecureBaseURL is returned by every request when the base URL is not
+// https (plain http is only allowed for localhost, 127.0.0.1 and [::1]), so
+// the API key is never sent unencrypted.
+var ErrInsecureBaseURL = errors.New("The API URL must use https (http is only allowed for localhost).")
 
 // Client is a minimal HTTP client for the Envello API. Construct one with
 // NewClient.
@@ -23,13 +31,19 @@ type Client struct {
 	apiKey     string
 	baseURL    string
 	httpClient *http.Client
+	// configErr is set by NewClient when the options are invalid. NewClient
+	// can't return an error without breaking its signature, so every request
+	// returns it instead, before anything is sent.
+	configErr error
 }
 
 // Option configures a Client at construction time.
 type Option func(*Client)
 
 // WithBaseURL overrides the API base URL, e.g. for local dev
-// ("http://localhost:3000") or self-hosted deployments.
+// ("http://localhost:3000") or self-hosted deployments. It must use https;
+// plain http is only allowed for localhost, 127.0.0.1 and [::1]. Otherwise
+// every request returns ErrInsecureBaseURL.
 func WithBaseURL(baseURL string) Option {
 	return func(c *Client) { c.baseURL = baseURL }
 }
@@ -51,7 +65,27 @@ func NewClient(apiKey string, opts ...Option) *Client {
 	for _, opt := range opts {
 		opt(c)
 	}
+	c.baseURL = strings.TrimRight(c.baseURL, "/")
+	c.configErr = validateBaseURL(c.baseURL)
 	return c
+}
+
+func validateBaseURL(baseURL string) error {
+	parsed, err := url.Parse(baseURL)
+	if err != nil {
+		return ErrInsecureBaseURL
+	}
+	// Hostname() strips IPv6 brackets ("[::1]" -> "::1") but keeps case.
+	host := strings.ToLower(parsed.Hostname())
+	if host == "" {
+		return ErrInsecureBaseURL
+	}
+	loopback := host == "localhost" || host == "127.0.0.1" || host == "::1"
+	scheme := strings.ToLower(parsed.Scheme)
+	if scheme != "https" && !(scheme == "http" && loopback) {
+		return ErrInsecureBaseURL
+	}
+	return nil
 }
 
 // APIError is returned whenever the Envello API responds with a non-2xx
@@ -77,6 +111,10 @@ type errorResponse struct {
 // to the standard auth/content-type/user-agent headers. It returns
 // *APIError for any non-2xx response.
 func (c *Client) do(ctx context.Context, method, path string, body any, out any, extraHeaders map[string]string) error {
+	if c.configErr != nil {
+		return c.configErr
+	}
+
 	var reqBody io.Reader
 	if body != nil {
 		buf, err := json.Marshal(body)
