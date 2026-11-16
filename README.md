@@ -44,6 +44,10 @@ Override the base URL for local dev or a self-hosted deployment with
 client := envello.NewClient("env_test_xxx", envello.WithBaseURL("http://localhost:3000"))
 ```
 
+The base URL must use `https`. Plain `http` is only accepted for
+`localhost`, `127.0.0.1` and `[::1]`; anything else makes every call return
+`envello.ErrInsecureBaseURL` without sending a request.
+
 ## API surface
 
 Kept intentionally small — send and validate, matching the real
