@@ -34,6 +34,11 @@ func VerifyWebhook(secret string, rawBody []byte, header string) bool {
 // secret rotation it carries one v1 per active secret, and a match on any of
 // them passes. Malformed input returns false; it never panics.
 func VerifyWebhookWithTolerance(secret string, rawBody []byte, header string, tolerance time.Duration, now time.Time) bool {
+	// An unset secret (os.Getenv on a missing variable) would make every
+	// header signed with an empty key verify.
+	if secret == "" {
+		return false
+	}
 	timestamp, signatures, ok := parseSignatureHeader(header)
 	if !ok {
 		return false

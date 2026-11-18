@@ -34,6 +34,7 @@ func TestVerifyWebhookWithTolerance(t *testing.T) {
 		want   bool
 	}{
 		{"test vector passes", vectorSecret, vectorBody, validHeader, signedAt, true},
+		{"empty secret never verifies, even against an empty-key signature", "", vectorBody, "t=1795000000,v1=73457d45da4254428de731ff81d20dd03d432f84fef02aead38b2fa7c7cd5c77", signedAt, false},
 		{"rotation header passes for new secret", vectorSecret, vectorBody, rotationHeader, signedAt, true},
 		{"rotation header passes for old secret", vectorOldSecret, vectorBody, rotationHeader, signedAt, true},
 		{"rotation header passes with old v1 first", vectorOldSecret, vectorBody, "t=1795000000,v1=" + vectorOldSig + ",v1=" + vectorSig, signedAt, true},
