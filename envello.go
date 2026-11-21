@@ -130,7 +130,7 @@ func (c *Client) do(ctx context.Context, method, path string, body any, out any,
 	}
 	req.Header.Set("Authorization", "Bearer "+c.apiKey)
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", "envello-go/0.1.0")
+	req.Header.Set("User-Agent", "envello-go/0.2.0")
 	for k, v := range extraHeaders {
 		req.Header.Set(k, v)
 	}
